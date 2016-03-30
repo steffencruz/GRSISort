@@ -61,13 +61,14 @@ public:
 	void InitReaction();
 	
 	// returns reaction input parameters
+	const char *GetNameFull() { return Form("%s @ %.3f MeV/u",this->GetName(),fTLab[0]/fNuc[0]->GetA()); }
 	TNucleus *GetNucleus(int part) {	return fNuc[part];}	
 	double GetM(int part)			{  return fM[part];				}	
 	double GetExc()  					{  return fExc; 			    }
 	double GetQVal()  				{  return fQVal; 			    }
 	bool	 Inverse()  				{  return fInverse; 		   }
 	double GetTBeam(bool inverse);
-        double GetVBeam()                               {  return fVLab[0]; }
+	double GetVBeam()   		  {  return fVLab[0]; }
 	
 	// CM frame properties
 	double GetInvariantMass()	{  return fInvariantMass;	}	
