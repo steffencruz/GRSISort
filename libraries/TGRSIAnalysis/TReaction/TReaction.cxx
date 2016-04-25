@@ -113,8 +113,9 @@ void TReaction::SetCmFrame(double exc){
 // These guys do the math to get lab frame values using CM angles
 double TReaction::GetELabFromThetaCm(double theta_cm, int part){
 	if(part==0 || part==1) return fTLab[part];
+	if(fInverse) theta_cm = PI - theta_cm;
 	
-	return fCmG*(fECm[part] - fCmV*fPCm[part]*cos(theta_cm));
+	return fCmG*(fECm[part] + fCmV*fPCm[part]*cos(theta_cm));
 }
 
 double TReaction::GetTLabFromThetaCm(double theta_cm, int part){
@@ -134,7 +135,8 @@ double TReaction::GetVLabFromThetaCm(double theta_cm, int part){
 
 double TReaction::GetPLabFromThetaCm(double theta_cm, int part){
 	if(part==0 || part==1) return fTLab[part];
-
+	if(fInverse) theta_cm = PI - theta_cm;
+	
 	double Pz = fCmG*(fPCm[part]*cos(theta_cm)-fCmV*fECm[part]);
 	double Pperp = fPCm[part]*sin(theta_cm);
 	return sqrt(pow(Pperp,2)+pow(Pz,2));
@@ -224,11 +226,8 @@ double TReaction::ConvertThetaLabToCm(double theta_lab, int part){
   else
     theta_cm = acos((-x*gtan2 - expr)/(1 + gtan2));  
     
-  if(fInverse)
-  	theta_cm = PI - theta_cm;
-  
-  if(part==3)
-  	theta_cm = -theta_cm;
+  if(fInverse)  theta_cm = PI - theta_cm; 
+  if(part==3) 	theta_cm = PI - theta_cm;
   		
   return theta_cm;	
 }
@@ -250,8 +249,7 @@ void TReaction::ConvertLabToCm(double theta_lab, double omega_lab, double &theta
 // Conversion from CM frame to LAB frame 
 double TReaction::ConvertThetaCmToLab(double theta_cm, int part){
 
-	if(fInverse)
-		theta_cm = PI - theta_cm;
+	if(fInverse) theta_cm = PI - theta_cm;
 		
 	double theta_lab = TMath::ATan2(sin(theta_cm),fCmG*(cos(theta_cm)+fCmV/fVCm[part]));
 	
@@ -262,11 +260,10 @@ double TReaction::ConvertThetaCmToLab(double theta_cm, int part){
 }
 
 double TReaction::ConvertOmegaCmToLab(double theta_cm, int part){
-	
 // the way to test this function is to use the known 4*cos(theta_lab) for elastics
 	double x = fCmV/fVCm[part];
-	if(fInverse)
-		theta_cm=PI-theta_cm;
+	if(fInverse) theta_cm=PI-theta_cm;
+	
 	double val1 = pow(pow(sin(theta_cm),2) + pow(fCmG*(x+cos(theta_cm)),2),1.5);
 	double val2 = (fCmG*(1+x*cos(theta_cm)));
 	
@@ -296,20 +293,19 @@ TGraph *TReaction::KinVsTheta(double thmin, double thmax, int part, bool Frame_L
 	double theta, T;	
 
 	for(int i=0; i<=180; i++){
-		theta = (double)i; // always in CM frame since function is continuous
-		
+		theta = (double)i; // always in CM frame since function is continuous		
 		T = GetTLabFromThetaCm(theta*D2R,part);
-		if(Units_keV)
-			T *=1e3;	
 		
 		if(Frame_Lab){ // this is now converted to specified frame (from Frame_Lab)
 			theta = ConvertThetaCmToLab(theta*D2R,part)*R2D;
-			//if(theta==g->GetX[g->GetN()-1]) // if angle is the same
-			//	continue;
-		}
+		//	T = GetTLab(theta*D2R,part);			
+		} //else
 
 		if(theta<thmin || theta>thmax) 
-			continue;		// set angular range				
+			continue;		// set angular range		
+			
+		if(Units_keV)
+			T *=1e3;						
 		g->SetPoint(i,theta,T);
 	}
 	
@@ -329,6 +325,7 @@ TGraph *TReaction::ThetaVsTheta(double thmin, double thmax, int part, bool Frame
 	
 	for(int i=0; i<=180; i++){
 		theta_cm = (double)i; // always in CM frame
+		
 		theta_lab = ConvertThetaCmToLab(theta_cm*D2R,part)*R2D;
 		
 		if((Frame_Lab && (theta_lab<thmin || theta_lab>thmax)))
