@@ -127,6 +127,8 @@ public:
 	// Graphs for conversions and kinematic/cross-section curves	
 					// Frame_Lab -> TLab[ThetaLab] 	and 	Frame_Cm -> TLab[ThetaCm]
 	TGraph *KinVsTheta(double thmin = 0.0, double thmax = 180.0, int part = 2, bool Frame_Lab = true, bool Units_keV = true);	
+					// Frame_Lab -> TLab[ThetaLab] 	and 	Frame_Cm -> TLab[ThetaCm]
+	TGraph *BetaVsTheta(double thmin = 0.0, double thmax = 180.0, int part = 2, bool Frame_Lab = true);	
 					// Frame_Lab -> ThetaCm[ThetaLab] 	and 	Frame_Cm -> ThetaLab[ThetaCm]
   TGraph *ThetaVsTheta(double thmin = 0.0, double thmax = 180.0, int part = 2, bool Frame_Lab = true); 
 					// Frame_Lab -> dOmegaCm/dOmegaLab[ThetaLab] 	and 	Frame_Cm -> dOmegaLab/dOmegaCm[ThetaCm]
@@ -134,6 +136,7 @@ public:
 					// Frame_Lab -> dSigma/dThetaLab[ThetaLab] 	and 	Frame_Cm -> dSigma/dThetaCm[ThetaCm]
 	TGraph *RutherfordVsTheta(double thmin = 1.0, double thmax = 179.0, int part = 2, bool Frame_Lab = true, bool Units_mbSr = true);	  
 		
+  TGraph *ThetaFinal(double thmin = 0.0, double thmax = 180.0, int part = 2); 
   void Print(Option_t *opt="") const;
   void Clear(Option_t *opt="");
   

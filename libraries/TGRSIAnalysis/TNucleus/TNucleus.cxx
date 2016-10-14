@@ -32,7 +32,7 @@ static double amu = 931.494043;
 const char *TNucleus::massfile = "/libraries/TGRSIAnalysis/SourceData/mass.dat";
 
 
-TNucleus::TNucleus(const char *name){
+TNucleus::TNucleus(const char *name, bool setsrcdata){
 	//Creates a nucleus based on symbol (ex. 26Na OR Na26) and sets all parameters from mass.dat
 	std::string Name = name;
 	//SetMassFile();
@@ -106,7 +106,7 @@ TNucleus::TNucleus(const char *name){
   SetMass();
 	SetSymbol(symbol.c_str());
   SetName(element.c_str());
-  SetSourceData();
+  if(setsrcdata) SetSourceData();
 }
 /*
 */

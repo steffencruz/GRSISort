@@ -112,7 +112,7 @@ void TReaction::SetCmFrame(double exc){
 // particle properties in LAB frame
 // These guys do the math to get lab frame values using CM angles
 double TReaction::GetELabFromThetaCm(double theta_cm, int part){
-	if(part==0 || part==1) return fTLab[part];
+	if(part==0 || part==1) return fELab[part];
 	if(fInverse) theta_cm = PI - theta_cm;
 	
 	return fCmG*(fECm[part] + fCmV*fPCm[part]*cos(theta_cm));
@@ -126,7 +126,7 @@ double TReaction::GetTLabFromThetaCm(double theta_cm, int part){
 }
 
 double TReaction::GetVLabFromThetaCm(double theta_cm, int part){
-	if(part==0 || part==1) return fTLab[part];
+	if(part==0 || part==1) return fVLab[part];
 
 	double PLab = GetPLabFromThetaCm(theta_cm,part);
 	double ELab = GetELabFromThetaCm(theta_cm,part);
@@ -134,16 +134,16 @@ double TReaction::GetVLabFromThetaCm(double theta_cm, int part){
 }
 
 double TReaction::GetPLabFromThetaCm(double theta_cm, int part){
-	if(part==0 || part==1) return fTLab[part];
+	if(part==0 || part==1) return fPLab[part];
 	if(fInverse) theta_cm = PI - theta_cm;
 	
-	double Pz = fCmG*(fPCm[part]*cos(theta_cm)-fCmV*fECm[part]);
+	double Pz = fCmG*(fPCm[part]*cos(theta_cm)+fCmV*fECm[part]);
 	double Pperp = fPCm[part]*sin(theta_cm);
 	return sqrt(pow(Pperp,2)+pow(Pz,2));
 }
 
 double TReaction::GetGLabFromThetaCm(double theta_cm, int part){
-	if(part==0 || part==1) return fTLab[part];
+	if(part==0 || part==1) return fGLab[part];
 	
 	double VLab = GetVLabFromThetaCm(theta_cm,part);
 	return 1/sqrt(1-pow(VLab,2));
@@ -288,7 +288,7 @@ TGraph *TReaction::KinVsTheta(double thmin, double thmax, int part, bool Frame_L
 	const char *frame = Form("%s",Frame_Lab?"Lab":"Cm");
 		
 	g->SetName(Form("KinVsTheta%s_%s",frame,GetName()));
-	g->SetTitle(Form("Kinematics for %s; Theta_{%s} [deg]; Kinetic energy [%s]",GetName(),frame,Units_keV?"keV":"MeV"));
+	g->SetTitle(Form("Kinematics for %s; #theta_{%s} of %s [#circ]; Kinetic energy [%s]",GetNameFull(),frame,fNuc[part]->GetName(),Units_keV?"keV":"MeV"));
 		
 	double theta, T;	
 
@@ -312,6 +312,32 @@ TGraph *TReaction::KinVsTheta(double thmin, double thmax, int part, bool Frame_L
 	return g;
 }
 
+// velocity versus theta (either frame)
+TGraph *TReaction::BetaVsTheta(double thmin, double thmax, int part, bool Frame_Lab){
+	TGraph *g = new TGraph();
+	const char *frame = Form("%s",Frame_Lab?"Lab":"Cm");
+		
+	g->SetName(Form("KinVsTheta%s_%s",frame,GetName()));
+	g->SetTitle(Form("Kinematics for %s; #theta_{%s} of %s [#circ]; #beta [/c]",GetNameFull(),frame,fNuc[part]->GetName()));
+		
+	double theta, V;	
+
+	for(int i=0; i<=180; i++){
+		theta = (double)i; // always in CM frame since function is continuous		
+		V = GetVLabFromThetaCm(theta*D2R,part);
+	
+		if(Frame_Lab) // this is now converted to specified frame (from Frame_Lab)
+			theta = ConvertThetaCmToLab(theta*D2R,part)*R2D;
+
+		if(theta<thmin || theta>thmax) 
+			continue;		// set angular range		
+			
+		g->SetPoint(i,theta,V);
+	}
+	
+	return g;
+}
+
 // Frame_Lab -> ThetaCm[ThetaLab] 	and 	Frame_Cm -> ThetaLab[ThetaCm]
 TGraph *TReaction::ThetaVsTheta(double thmin, double thmax, int part, bool Frame_Lab){
 	TGraph *g = new TGraph();
@@ -319,7 +345,7 @@ TGraph *TReaction::ThetaVsTheta(double thmin, double thmax, int part, bool Frame
 	const char *other = Form("%s",!Frame_Lab?"Lab":"Cm");
 	
 	g->SetName(Form("ThetaVsTheta%s_%s",frame,GetName()));
-	g->SetTitle(Form("Angle conversion for %s; Theta_{%s} [deg]; Theta_{%s} [deg]",GetName(),frame,other));
+	g->SetTitle(Form("Angle conversion for %s; #theta_{%s} of %s [#circ]; #theta_{%s} [#circ]",GetNameFull(),frame,fNuc[part]->GetName(),other));
 	
 	double theta_cm, theta_lab;	
 	
@@ -350,7 +376,7 @@ TGraph *TReaction::OmegaVsTheta(double thmin, double thmax, int part, bool Frame
 	const char *other = Form("%s",!Frame_Lab?"Lab":"Cm");
 	
 	g->SetName(Form("%s_OmegaVsTheta%s",GetName(),frame));
-	g->SetTitle(Form("Solid angle conversion for %s; Theta_{%s} [deg]; dOmega_{%s} / dOmega_{%s}",GetName(),frame,other,frame));
+	g->SetTitle(Form("Solid angle conversion for %s; #theta_{%s} of %s [#circ]; d #Omega_{%s} / d #Omega_{%s}",GetNameFull(),frame,fNuc[part]->GetName(),other,frame));
 	
 	double theta, Om;	
 	for(int i=0; i<=180; i++){
@@ -378,7 +404,7 @@ TGraph *TReaction::RutherfordVsTheta(double thmin, double thmax, int part, bool 
 	const char *frame = Form("%s",Frame_Lab?"Lab":"Cm");
 	
 	g->SetName(Form("%s_RutherfordVsTheta%s",GetName(),frame));
-	g->SetTitle(Form("Rutherford cross section for %s; Theta_{%s} [deg]; dSigma / dOmega_{%s} [%s/sr]",GetName(),frame,frame,Units_mb?"mb":"fm^2"));
+	g->SetTitle(Form("Rutherford cross section for %s; #theta_{%s} of %s [#circ]; d #sigma / d #Omega_{%s} [%s/sr]",GetNameFull(),frame,fNuc[part]->GetName(),frame,Units_mb?"mb":"fm^2"));
 	
 	double theta, R;	
 	
@@ -400,6 +426,28 @@ TGraph *TReaction::RutherfordVsTheta(double thmin, double thmax, int part, bool 
 	return g;
 }
 
+
+TGraph *TReaction::ThetaFinal(double thmin, double thmax, int part){
+
+	// always as a function of cm angle
+	TGraph *gtheta_ej = ThetaVsTheta(thmin,thmax,2,false);
+	TGraph *gtheta_re = ThetaVsTheta(thmin,thmax,3,false);
+	TGraph *g = new TGraph();
+	g->SetName(Form("ThetaEjVsThetaRe_%s",GetName()));
+	
+	const char *nstr = Form("%s",part==2?fNuc[3]->GetName():fNuc[2]->GetName());
+	g->SetTitle(Form("Angle conversion for %s; #theta_{Lab} of %s [#circ]; #theta_{Lab} of %s [#circ]",GetNameFull(),nstr,fNuc[part]->GetName()));
+	
+	//printf("\n\t fThetaMax[2] = %.2f\t fThetaMax[3] = %.2f\n\n",fThetaMax[2],fThetaMax[3]);
+
+	for(int i=0; i<gtheta_ej->GetN(); i++){
+		if(part==2)
+			g->SetPoint(i,gtheta_re->GetY()[i],fThetaMax[2]*TMath::RadToDeg()-gtheta_ej->GetY()[i]);
+		if(part==3)
+			g->SetPoint(i,gtheta_ej->GetY()[i],fThetaMax[3]*TMath::RadToDeg()-gtheta_re->GetY()[i]);
+	}
+	return g;
+}
 	
 void TReaction::Print(Option_t *opt) const { 
  
